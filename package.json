@@ -1,0 +1,19 @@
+{
+  "name": "limitedjoiner",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^14.10.2",
+    "fetch-with-proxy": "^3.0.1",
+    "https-proxy-agent": "^5.0.1"
+  },
+  "devDependencies": {
+    "@types/node-fetch": "^2.6.3"
+  }
+}
