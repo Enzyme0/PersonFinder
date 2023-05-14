@@ -8,6 +8,7 @@ import { Item } from "./Item";
 import { API } from "./API";
 //mongodb
 import "mongodb";
+import { Collection } from "mongodb";
 const api = new API();
 
 export class DataBase 
@@ -49,7 +50,6 @@ export class DataBase
         //get the item from the database, (just the whole document)
         //every item has an object called data, which is the item data. we're looking for data.item_id
         const document = await collection.findOne({ "data.item_id": assetId })
-        console.log(document)
         //if the document is null, return null
         if (!document) {
             return null;
@@ -169,5 +169,24 @@ export class DataBase
             users.push(document);
         }
         return users;
-    }       
+    } 
+    //get all userids of users who have a certain item, specified by itemid
+    public static async getAllUsersWithItem(itemId: string): Promise<string[]> {
+        const collection : Collection = await this.getCollection("items");
+        let documents = await collection.findOne({ "data.item_id": itemId });
+        //if the document is null, return null
+        
+        const users: string[] = [];
+        if (!documents)
+            throw new Error("Item not found");
+        //iterate through the "owners" array and push the userIds to the users array
+        for (const document of documents.owners) {
+            users.push(document.owner_id);
+        }
+        //document would be just 1 item, but the user data is stored in owners
+        //fin
+        return users;
+    }
+    
+
 }

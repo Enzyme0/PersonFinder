@@ -26,6 +26,7 @@ require('dotenv').config();
 //mongodb
 const DataBase_1 = require("./classes/DataBase");
 const Item_1 = require("./classes/Item");
+const RobloxAPI_1 = require("./classes/RobloxAPI");
 //rolimons api
 const API_1 = require("./classes/API");
 //create a new instance of the api
@@ -113,20 +114,25 @@ function addItem(interaction) {
         //try to get item data from the db, if it exists, return
         try {
             const item = yield DataBase_1.DataBase.getItem(assetId);
-            if (!(item === null || item === void 0 ? void 0 : item.isNull()) || item == null)
+            console.log(item);
+            if (!item == null)
                 return interaction.reply("Item already exists in database! Updating the channel...");
             //delete the channel
         }
         catch (err) {
             //just continue
-            yield interaction.reply("Added item to database!");
-            const item = yield Item_1.Item.get(assetId);
-            yield DataBase_1.DataBase.addItem(item);
-            yield addItemChannel(interaction, item);
         }
+        yield interaction.reply("Adding to database...");
+        const item = yield Item_1.Item.get(assetId);
+        const owners = yield api.getOwnershipData(assetId);
+        //edit reply to say Added (item name) to database with (owners.length) owners
+        yield interaction.editReply(`Added ${item.data.item_name} to database with ${owners.length} owners!`);
+        yield DataBase_1.DataBase.addItem(item, owners);
+        yield addItemChannel(interaction, item);
     });
 }
 function deleteItem(interaction) {
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
         if (!interaction.isChatInputCommand())
             return;
@@ -135,11 +141,21 @@ function deleteItem(interaction) {
             return interaction.reply("Please provide an asset id");
         try {
             const item = yield DataBase_1.DataBase.getItem(assetId);
-            console.log(item);
-            if ((item === null || item === void 0 ? void 0 : item.data) == null)
-                return interaction.reply("Item does not exist in database!");
+            if (!item)
+                return interaction.reply("Item does not exist in database!, failed at non-exist check.");
+            if (item === null || item === void 0 ? void 0 : item.isNull())
+                return interaction.reply("Item does not exist in database!, failed at isNull check.");
             yield DataBase_1.DataBase.removeItem(assetId);
             //delete the channel with the name item.data.item_name-item.data.item_id
+            //look in the category itemChannel
+            //replace the spaces in the name with -
+            let tempName = item.data.item_name.replace(/ /g, "-");
+            let tempId = item.data.item_id;
+            console.log(tempName + "-" + tempId);
+            const channel = (_a = interaction.guild) === null || _a === void 0 ? void 0 : _a.channels.cache.find(channel => channel.name === `${tempName.toLowerCase()}-${tempId}` && channel.parentId === itemChannel);
+            if (!channel)
+                return interaction.reply("Channel does not exist!");
+            yield channel.delete();
             yield interaction.reply("Deleted item from database!");
             //delete the channel
         }
@@ -147,6 +163,26 @@ function deleteItem(interaction) {
             console.log(err);
             yield interaction.reply("An error occured!");
         }
+    });
+}
+function getOwners(interaction) {
+    return __awaiter(this, void 0, void 0, function* () {
+        //run db.getAllUsers(itemid)
+        if (!interaction.isChatInputCommand())
+            return;
+        const assetId = interaction.options.getString('assetid');
+        if (!assetId)
+            return interaction.reply("Please provide an asset id");
+        const item = yield DataBase_1.DataBase.getItem(assetId);
+        if (!item)
+            return interaction.reply("Item does not exist in database!");
+        if (item === null || item === void 0 ? void 0 : item.isNull())
+            return interaction.reply("Item does not exist in database!");
+        //run RobloxAPI.getOnline(assetId)
+        interaction.reply("Getting owners...");
+        const owners = yield RobloxAPI_1.RobloxAPI.getOnline(assetId);
+        //send the owners in a message
+        yield interaction.editReply(`Owners of ${item.data.item_name} (${owners.length}): ${owners.join(", ")}`);
     });
 }
 client.on('interactionCreate', (interaction) => __awaiter(void 0, void 0, void 0, function* () {
@@ -160,6 +196,12 @@ client.on('interactionCreate', (interaction) => __awaiter(void 0, void 0, void 0
     }
     if (interaction.commandName === 'removeitem') {
         yield deleteItem(interaction);
+    }
+    if (interaction.commandName === 'getowners') {
+        yield getOwners(interaction);
+    }
+    else {
+        yield interaction.reply("wtf");
     }
 }));
 //when the bot is ready

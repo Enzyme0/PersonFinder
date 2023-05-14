@@ -41,5 +41,17 @@ client.on('ready', () => {
             }
         ]
     });
+    client.application.commands.create({
+        name: 'getowners',
+        description: 'Gets the owners of an item',
+        options: [
+            {
+                name: 'assetid',
+                description: 'The asset id of the item',
+                type: 3,
+                required: true,
+            }
+        ]
+    });
 });
 client.login("MTEwMzA4NDIyOTMyNTI0NjQ4NA.Gnahey.H0Ho1QcroQola9sN-Jm6ABf73HOfsIZSy9RFdk");

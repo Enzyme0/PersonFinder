@@ -9,8 +9,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.4.0",
     "discord.js": "^14.10.2",
     "fetch-with-proxy": "^3.0.1",
+    "got": "^12.6.0",
+    "http-proxy-agent": "^6.0.0",
     "https-proxy-agent": "^5.0.1"
   },
   "devDependencies": {

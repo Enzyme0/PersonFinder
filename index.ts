@@ -1,6 +1,6 @@
 //discord js
 //const { Client, GatewayIntentBits, messageLink, ActionRow, ActionRowBuilder, ButtonBuilder, EmbedBuilder, Interaction} = require('discord.js');
-import { Client, GatewayIntentBits, messageLink, ActionRow, ActionRowBuilder, ButtonBuilder, EmbedBuilder, Interaction, CacheType, ChannelCreateOptions, ChannelFlagsBitField, ChannelType, ChannelFlags} from 'discord.js';
+import { Client, GatewayIntentBits, messageLink, ActionRow, ActionRowBuilder, ButtonBuilder, EmbedBuilder, Interaction, CacheType, ChannelFlagsBitField, ChannelType, ChannelFlags} from 'discord.js';
 //.env 
 
 const client = new Client({
@@ -17,6 +17,7 @@ require('dotenv').config();
 //mongodb
 import { DataBase } from "./classes/DataBase";
 import { Item } from "./classes/Item";
+import { RobloxAPI } from './classes/RobloxAPI';
 //rolimons api
 import { API } from "./classes/API";
 //create a new instance of the api
@@ -148,6 +149,20 @@ async function deleteItem(interaction: Interaction<CacheType>)
         await interaction.reply("An error occured!");
     }
 }
+async function getOwners(interaction: Interaction<CacheType>)
+{
+    //run db.getAllUsers(itemid)
+    if(!interaction.isChatInputCommand()) return;
+    const assetId = interaction.options.getString('assetid'); if(!assetId) return interaction.reply("Please provide an asset id");
+    const item = await DataBase.getItem(assetId);
+    if(!item) return interaction.reply("Item does not exist in database!");
+    if(item?.isNull()) return interaction.reply("Item does not exist in database!");
+    //run RobloxAPI.getOnline(assetId)
+    await interaction.reply("Getting owners...");
+    const owners = await RobloxAPI.getOnline(assetId);
+    //send the owners in a message
+    await interaction.editReply(`Owners of ${item.data.item_name} (${owners.length}): ${owners.join(", ")}`);
+}
 client.on('interactionCreate', async interaction => {
     if(!interaction.isCommand()) return;
     if(interaction.commandName === 'ping') {
@@ -158,6 +173,9 @@ client.on('interactionCreate', async interaction => {
     }
     if(interaction.commandName === 'removeitem') {
         await deleteItem(interaction);
+    }
+    if(interaction.commandName === 'getowners') {
+        await getOwners(interaction);
     }
 });
 

@@ -41,13 +41,17 @@ class API {
     // }
     getVariable(JavaScript, Variable) {
         //use regex to get the variable
-        const regex = new RegExp(Variable + "              = (.*?);"); //rewrite following regex to not explicitly match spaces, but match any whitespace or any amount of whitespace
-        const regex2 = new RegExp(Variable + " = (.*?);");
-        const match = JavaScript.match(regex) ? JavaScript.match(regex) : JavaScript.match(regex2);
+        const regex = new RegExp(Variable + " =(.*?);"); //rewrite following regex to not explicitly match spaces, but match any whitespace or any amount of whitespace
+        const regex2 = new RegExp(Variable + "              = (.*?);");
+        const regex3 = new RegExp(Variable + "                 =(.*?);");
+        //match = whatever regex work
+        const match = JavaScript.match(regex) || JavaScript.match(regex2) || JavaScript.match(regex3);
         if (match) {
             return match[1];
         }
-        throw new Error("Variable not found");
+        //write to test.js
+        fs.writeFileSync("test.js", JavaScript);
+        throw new Error("Unable to find variable " + Variable);
     }
     getData(Type, Id) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -66,6 +70,86 @@ class API {
             return JSON.parse(rawData);
         });
     }
+    ownerShipData(assetId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const response = yield (0, node_fetch_1.default)(this.urlFormat.replace("%s", "item").replace("%s", assetId.toString()));
+            //throw error if 404/ not ok
+            if (!response.ok) {
+                throw new Error("HTTP error, status = " + response.status);
+            }
+            const text = yield response.text();
+            //see if it contains the words "bc_copies_data"
+            if (!text.includes("bc_copies_data")) {
+                throw new Error("Invalid response");
+            }
+            let rawData = this.getVariable(text, "bc_copies_data");
+            let newData = JSON.parse(rawData);
+            if (typeof newData == "string") {
+                //write to test.js
+                yield fs.writeFileSync("test.js", rawData);
+                throw new Error("Invalid response");
+            }
+            //data is a bunch of arrays
+            //e.g
+            /*
+            "owner_ids": ['1', '2', '3'],
+            "owner_names": ['a', 'b', 'c'],
+            "quantities": ['1', '2', '3'],
+            "bc_uaids": ['1', '2', '3'],
+            "bc_serials": ['1', '2', '3'],
+            //bc updated is time of purchase, in milliseconds
+            "bc_updated": ['1', '2', '3'],
+            //time in ms
+            "bc_presence_upate_time": ['1', '2', '3'],
+            //time in ms
+            "bc_last_online_time": ['1', '2', '3'],
+            */
+            //we want to make an array of objects that has each index of the arrays as a property, but if
+            //also remove any objects that have a null owner_id, or owner_name
+            //remove any objects that have a "presence update time" of less than 1 years ago (1651694373349)  < this will help us find more inactive accounts
+            let objs = [];
+            for (let i = 0; i < newData.owner_ids.length; i++) {
+                if (newData.owner_ids[i] == null || newData.owner_names[i] == null) {
+                    newData.owner_ids.splice(i, 1);
+                    newData.owner_names.splice(i, 1);
+                    newData.quantities.splice(i, 1);
+                    newData.bc_uaids.splice(i, 1);
+                    newData.bc_serials.splice(i, 1);
+                    newData.bc_updated.splice(i, 1);
+                    newData.bc_presence_update_time.splice(i, 1);
+                    newData.bc_last_online.splice(i, 1);
+                }
+                else if (newData.bc_presence_update_time[i] < 1651694373349) {
+                    newData.owner_ids.splice(i, 1);
+                    newData.owner_names.splice(i, 1);
+                    newData.quantities.splice(i, 1);
+                    newData.bc_uaids.splice(i, 1);
+                    newData.bc_serials.splice(i, 1);
+                    newData.bc_updated.splice(i, 1);
+                    newData.bc_presence_update_time.splice(i, 1);
+                    newData.bc_last_online.splice(i, 1);
+                }
+                //^ filter out any objects that have a presence update time of less than 1 year ago, and above it we filter out any objects that have a null owner_id or owner_name
+                //create objects
+                let obj = {
+                    owner_id: newData.owner_ids[i],
+                    owner_name: newData.owner_names[i],
+                    quantity: newData.quantities[i],
+                    bc_uaids: newData.bc_uaids[i],
+                    bc_serials: newData.bc_serials[i],
+                    bc_updated: newData.bc_updated[i],
+                    bc_presence_update_time: newData.bc_presence_update_time[i],
+                    bc_last_online: newData.bc_last_online[i]
+                };
+                objs.push(obj);
+            }
+            // add the objects to the array
+            return objs;
+        });
+    }
+    //quick console script to find 1 year ago in ms
+    // var d = new Date();
+    // d.setFullYear(d.getFullYear() - 1);
     getAssetData(assetId) {
         return __awaiter(this, void 0, void 0, function* () {
             return yield this.getData("item", assetId);
@@ -74,6 +158,11 @@ class API {
     getUserData(userId) {
         return __awaiter(this, void 0, void 0, function* () {
             return yield this.getData("player", userId);
+        });
+    }
+    getOwnershipData(assetId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.ownerShipData(assetId);
         });
     }
 }

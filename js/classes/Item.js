@@ -37,9 +37,6 @@ exports.Item = void 0;
 const API = __importStar(require("./API"));
 const api = new API.API();
 class Item {
-    constructor(data) {
-        this.data = data;
-    }
     //get method to get the item data by the assetId
     static get(assetId) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -52,6 +49,9 @@ class Item {
             }
             return new Item(data);
         });
+    }
+    constructor(data) {
+        this.data = data;
     }
     isNull() {
         return this.data == null;
