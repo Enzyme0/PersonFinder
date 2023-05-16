@@ -57,6 +57,33 @@ client.application.commands.create({
         }
     ]
 });
+//getuserids
+client.application.commands.create({
+    name: 'getuserids',
+    description: 'Gets the userids of an item',
+    options: [
+        {
+            name: 'assetid',
+            description: 'The asset id of the item',
+            type: 3,
+            required: true,
+        }
+    ]
+});
+//eval
+client.application.commands.create({
+    name: 'eval',
+    description: 'Evaluates code',
+    options: [
+        {
+            name: 'code',
+            description: 'The code to evaluate',
+            type: 3,
+            required: true,
+        }
+    ]
+});
+
 });
 
 client.login("MTEwMzA4NDIyOTMyNTI0NjQ4NA.Gnahey.H0Ho1QcroQola9sN-Jm6ABf73HOfsIZSy9RFdk");

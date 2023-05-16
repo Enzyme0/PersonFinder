@@ -10,6 +10,7 @@ import { API } from "./API";
 import "mongodb";
 import { Collection } from "mongodb";
 const api = new API();
+import { RobloxAPI } from "./RobloxAPI";
 
 export class DataBase 
 {
@@ -26,10 +27,43 @@ export class DataBase
         const db = client.db("LimitedJoiner");
         return db.collection(collection);
     }
+    public static async removeInvalids(owners: any[]): Promise<any[]>
+    {
+        //iterate through the owners array and remove any invalid users using the https://users.roblox.com/v1/users with the id in the owners array
+        let ids = [];
+        for(let i = 0; i < owners.length; i++)
+        {
+            ids.push(owners[i].owner_id);
+        }
+        const chunks = RobloxAPI.chunkArray(ids, 100);
+        const promises = [];
+        for(let i = 0; i < chunks.length; i++)
+        {
+            promises.push(RobloxAPI.users(chunks[i]));
+        }
+        const results = await Promise.all(promises);
+        //if the user is invalid, the roblox api simply doesnt return it in the array
+        //if i have users 1, gabagoo, 12, 3
+        //and i send it to the api, it will return 1, 12, 3
+        //check to find this missing user, and remove from the owners array
+    
+        //return the owners array
+        //if owners[i].owner_id is not in results, remove it from the owners array
+        for(let i = 0; i < owners.length; i++)
+        {
+            if(!results.includes(owners[i].owner_id))
+            {
+                owners.splice(i, 1);
+            }
+        }
+        return owners;
+    }
     
     public static async addItem(item: Item, owners: any): Promise<void> {
         const collection = await this.getCollection("items");
         //make an object with the item data and the owners
+        //remove invalid users from the owners array
+        owners = await this.removeInvalids(owners);
         let obj =
         {
             data: item.data,

@@ -14,7 +14,9 @@
     "fetch-with-proxy": "^3.0.1",
     "got": "^12.6.0",
     "http-proxy-agent": "^6.0.0",
-    "https-proxy-agent": "^5.0.1"
+    "https-proxy-agent": "^5.0.1",
+    "noblox": "^4.8.5",
+    "noblox.js": "^4.14.1"
   },
   "devDependencies": {
     "@types/node-fetch": "^2.6.3"
