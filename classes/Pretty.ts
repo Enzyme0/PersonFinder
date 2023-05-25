@@ -5,7 +5,7 @@ import { UserPresence } from "noblox.js";
 import noblox from "noblox.js";
 
 //embed builder
-import { EmbedBuilder, Embed, ActionRow, ButtonBuilder,ButtonStyle, ActionRowBuilder } from "discord.js";
+import { EmbedBuilder, Embed, ActionRow, ButtonBuilder,ButtonStyle, ActionRowBuilder, Colors, ColorResolvable} from "discord.js";
 
 export class Pretty
 {
@@ -43,6 +43,12 @@ export class Pretty
         
         return busts;
     }
+    //get userids
+    public static async getIds(names: string[]) : Promise<number[]>
+    {
+        return await noblox.getIdFromUsername(names);
+    }
+
     public static async getNames(userIds: undefined | number[])
     {
         if(userIds == undefined) throw new Error("User ids is undefined")
@@ -85,6 +91,7 @@ export class Pretty
         {
             const embed = new EmbedBuilder();
             embed.setTitle(item.data.item_name);
+            embed.setColor('Random');
             embed.setThumbnail(busts[i]);
             try
             
@@ -121,9 +128,8 @@ export class Pretty
             const actionRow = new ActionRowBuilder();
             //button
             const button = new ButtonBuilder();
-            button.setCustomId("join");
             button.setLabel("Join");
-            button.setStyle(ButtonStyle.Primary);
+            button.setStyle(ButtonStyle.Link);
             button.setURL("https://www.roblox.com/users/" + filtered[i].userId + "/profile");
             //ban button
             const banButton = new ButtonBuilder();
@@ -131,6 +137,7 @@ export class Pretty
             banButton.setLabel("Ban");
             banButton.setStyle(ButtonStyle.Danger);
             actionRow.addComponents(button, banButton);
+            rows.push(actionRow);
 
             embeds.push(embed);
         }

@@ -30,7 +30,7 @@ export class API {
         //use regex to get the variable
         const regex = new RegExp(Variable + " =(.*?);");//rewrite following regex to not explicitly match spaces, but match any whitespace or any amount of whitespace
         const regex2 = new RegExp(Variable + "              = (.*?);");
-        const regex3 = new RegExp(Variable + "                 =(.*?);");
+        const regex3 = new RegExp(Variable + "                =(.*?);");
         //match = whatever regex work
         const match = JavaScript.match(regex) || JavaScript.match(regex2) || JavaScript.match(regex3);
         if (match) {
@@ -64,11 +64,11 @@ export class API {
             throw new Error("HTTP error, status = " + response.status);
         }
         const text = await response.text();
-        //see if it contains the words "bc_copies_data"
-        if (!text.includes("bc_copies_data")) {
+        //see if it contains the words "all_copies_data"
+        if (!text.includes("all_copies_data")) {
             throw new Error("Invalid response");
         }
-        let rawData = this.getVariable(text, "bc_copies_data");
+        let rawData = this.getVariable(text, "all_copies_data");
         let newData = JSON.parse(rawData);
         if(typeof newData == "string")
         {
@@ -82,14 +82,14 @@ export class API {
         "owner_ids": ['1', '2', '3'],
         "owner_names": ['a', 'b', 'c'],
         "quantities": ['1', '2', '3'],
-        "bc_uaids": ['1', '2', '3'],
-        "bc_serials": ['1', '2', '3'],
+        "uaids": ['1', '2', '3'],
+        "serials": ['1', '2', '3'],
         //bc updated is time of purchase, in milliseconds
-        "bc_updated": ['1', '2', '3'],
+        "updated": ['1', '2', '3'],
         //time in ms
-        "bc_presence_upate_time": ['1', '2', '3'],
+        "presence_upate_time": ['1', '2', '3'],
         //time in ms
-        "bc_last_online_time": ['1', '2', '3'],
+        "last_online_time": ['1', '2', '3'],
         */
        //we want to make an array of objects that has each index of the arrays as a property, but if
         //also remove any objects that have a null owner_id, or owner_name
@@ -97,27 +97,17 @@ export class API {
         let objs = [];
         for(let i = 0; i < newData.owner_ids.length; i++)
         {
+            console.log(`${newData}`)
             if(newData.owner_ids[i] == null || newData.owner_names[i] == null)
             {
-                newData.owner_ids.splice(i, 1);
-                newData.owner_names.splice(i, 1);
-                newData.quantities.splice(i, 1);
-                newData.bc_uaids.splice(i, 1);
-                newData.bc_serials.splice(i, 1);
-                newData.bc_updated.splice(i, 1);
-                newData.bc_presence_update_time.splice(i, 1);
-                newData.bc_last_online.splice(i, 1);
+                console.log(`Null owner id or name, skipping ${i}`)
+                continue;
             }
-            else if(newData.bc_presence_update_time[i] < 1651694373349)
+            
+            if( newData.presence_update_time[i] == null)
             {
-                newData.owner_ids.splice(i, 1);
-                newData.owner_names.splice(i, 1);
-                newData.quantities.splice(i, 1);
-                newData.bc_uaids.splice(i, 1);
-                newData.bc_serials.splice(i, 1);
-                newData.bc_updated.splice(i, 1);
-                newData.bc_presence_update_time.splice(i, 1);
-                newData.bc_last_online.splice(i, 1);
+                console.log(`Presence update time is less than 1 year ago, skipping ${i}`)
+                continue;
             }
             //^ filter out any objects that have a presence update time of less than 1 year ago, and above it we filter out any objects that have a null owner_id or owner_name
             //create objects
@@ -125,11 +115,11 @@ export class API {
                 owner_id: newData.owner_ids[i],
                 owner_name: newData.owner_names[i],
                 quantity: newData.quantities[i],
-                bc_uaids: newData.bc_uaids[i],
-                bc_serials: newData.bc_serials[i],
-                bc_updated: newData.bc_updated[i],
-                bc_presence_update_time: newData.bc_presence_update_time[i],
-                bc_last_online: newData.bc_last_online[i]
+                uaids: newData.uaids[i],
+                serials: newData.serials[i],
+                updated: newData.updated[i],
+                presence_update_time: newData.presence_update_time[i],
+                last_online: newData.last_online[i]
             }
             objs.push(obj);
         }

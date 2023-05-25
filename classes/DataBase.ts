@@ -17,8 +17,11 @@ export class DataBase
     
     private static async connect(): Promise<any> {
         const MongoClient = require('mongodb').MongoClient;
-        const uri = "mongodb://localhost:27017";
-        const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+        //local
+        const uri = "mongodb://localhost:27017/";
+    
+        const ssl = true;
+        const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true});
         return await client.connect();
     }
 
@@ -118,6 +121,23 @@ export class DataBase
             throw new Error("Config not modified, watf happen!");
     }
 
+    public static async updateItem(item: Item): Promise<void> {
+        const collection = await this.getCollection("items");
+        //document is the item
+        let document = await collection.findOne({ "data.item_id": item.data.item_id });
+        //if the document is null, return null
+        if (!document)
+            throw new Error("Item not found");
+        //update the item
+        document = item;
+        //update the document, NOW MONKEY.
+        const result = await collection.updateOne({ "data.item_id": item.data.item_id }, { $set: document });
+        //if the result is not modified, throw an error
+        if (result.modifiedCount == 0)
+            throw new Error("Item not modified, watf happen!");
+    }
+    
+
     public static async getConfig(): Promise<any> {
         const collection = await this.getCollection("config");
         const document = await collection.findOne({ name: "config" });
@@ -150,6 +170,17 @@ export class DataBase
     }
 
     public static allNonBan(): Promise<string[]> {
+        return new Promise(async (resolve, reject) => {
+            const collection = await this.getCollection("banned");
+            const documents = await collection.find({}).toArray();
+            const users: string[] = [];
+            for (const document of documents) {
+                users.push(document.userId);
+            }
+            resolve(users);
+        });
+    }
+    public static allBanned(): Promise<string[]> {
         return new Promise(async (resolve, reject) => {
             const collection = await this.getCollection("banned");
             const documents = await collection.find({}).toArray();
@@ -221,6 +252,7 @@ export class DataBase
         //fin
         return users;
     }
+    //isbanned funnnc (check banned database for a user id)
     
 
 }

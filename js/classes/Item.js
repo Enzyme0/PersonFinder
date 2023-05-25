@@ -35,8 +35,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Item = void 0;
 //repersenting an item in the rolimons api, each are accessed by their assetId
 const API = __importStar(require("./API"));
+const DataBase_1 = require("./DataBase");
 const api = new API.API();
 class Item {
+    constructor(data) {
+        this.data = data;
+    }
     //get method to get the item data by the assetId
     static get(assetId) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -50,8 +54,17 @@ class Item {
             return new Item(data);
         });
     }
-    constructor(data) {
-        this.data = data;
+    static update(assetId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = yield api.getAssetData(assetId);
+            //turn all data into strings
+            for (let key in data) {
+                if (data[key] === null)
+                    continue;
+                data[key] = data[key].toString();
+            }
+            yield DataBase_1.DataBase.updateItem(data);
+        });
     }
     isNull() {
         return this.data == null;

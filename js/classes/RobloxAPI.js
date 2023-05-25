@@ -14,27 +14,40 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RobloxAPI = void 0;
 const http_proxy_agent_1 = require("http-proxy-agent");
-const fetch_with_proxy_1 = __importDefault(require("fetch-with-proxy"));
-//db, items
+const node_fetch_1 = __importDefault(require("node-fetch"));
 const DataBase_1 = require("./DataBase");
-const proxies = ["104.239.92.159:6799", "104.239.98.77:6108", "38.170.163.94:8150", "38.154.195.175:9263", "91.246.195.174:6943", "104.143.245.184:6424", "107.175.119.12:6540", "185.245.25.154:6415", "206.41.174.248:6203", "104.238.20.69:5691", "161.123.154.189:6719", "206.41.169.85:5665", "45.192.156.38:6709", "109.207.130.148:8155", "45.170.13.160:8186", "64.137.75.22:5942", "134.73.70.82:6326", "184.174.46.214:5843", "191.102.158.244:8308", "104.239.81.69:6604", "104.250.201.196:6741", "107.179.26.192:6262", "154.85.126.81:5088", "104.143.229.32:5960", "185.242.94.26:6111", "45.67.2.160:5734", "64.43.89.203:6462", "104.239.80.62:5640", "185.102.49.209:6547", "104.238.37.118:6675", "154.85.126.110:5117", "157.52.212.247:6150", "154.92.123.172:5510", "104.232.209.173:6131", "45.192.152.253:6191", "104.239.108.90:6325", "161.123.33.232:6255", "5.157.130.251:8255", "109.196.163.219:6317", "104.148.0.2:5357", "103.75.228.141:6220", "198.46.161.12:5062", "45.43.190.254:6772", "103.37.181.22:6678", "107.175.119.196:6724", "38.154.204.124:8165", "45.131.102.137:5789", "45.224.229.113:9178", "64.137.88.243:6482", "104.239.97.100:5853", "109.196.160.236:5982", "216.19.206.195:6173", "154.92.121.96:5115", "104.239.38.244:6777", "45.131.94.81:6068", "140.99.87.173:8419", "38.153.136.75:5098", "119.42.36.243:6143", "38.170.175.13:5682", "38.154.194.56:9469", "69.88.137.18:7104", "45.43.177.29:6357", "161.123.215.117:6728", "198.23.239.84:6490", "2.56.178.72:5112", "104.239.105.40:6570", "64.137.60.46:5110", "104.238.38.74:6342", "140.99.86.156:8266", "38.154.197.145:6811", "45.41.178.212:6433", "109.196.161.39:6487", "154.92.116.16:6328", "161.123.152.214:6459", "38.153.136.1:5024", "161.123.115.236:5257", "45.192.134.160:6481", "64.137.31.8:6622", "45.131.102.251:5903", "5.157.131.128:8388", "103.101.88.108:5832", "104.239.43.177:5905", "206.41.172.180:6740", "45.43.167.148:6330", "45.141.80.12:5738", "45.192.147.234:5882", "95.164.233.58:5416", "188.68.1.238:6107", "200.0.61.46:6121", "107.179.114.215:5988", "45.127.250.62:5671", "192.3.48.173:6166", "45.192.157.168:6295", "104.239.104.106:6330", "104.144.78.86:9131", "104.239.80.97:5675", "104.239.3.191:6151", "154.73.249.244:6823", "104.239.78.84:6029", "161.123.209.121:6621"];
+//import * from "noblox.js" as noblox;
+//noblox
+const noblox_js_1 = __importDefault(require("noblox.js"));
+const fs_1 = __importDefault(require("fs"));
+const proxies = ["37.19.221.235:8595", "45.86.63.177:6245", "104.168.25.187:5869", "168.181.228.164:6589"];
 class RobloxAPI {
     static fetchData(url, options, body) {
         return __awaiter(this, void 0, void 0, function* () {
-            const proxy = this.getProxy();
-            const agent = new http_proxy_agent_1.HttpProxyAgent("http://" + proxy.ip + ":" + proxy.port);
-            options.agent = agent;
-            options.body = body;
-            const response = yield (0, fetch_with_proxy_1.default)(url, options);
-            return response;
+            const proxyAgent = new http_proxy_agent_1.HttpProxyAgent("http://" + this.getProxy());
+            const response = yield (0, node_fetch_1.default)(url, Object.assign(Object.assign({ proxyAgent }, options), { body: body }));
+            const json = yield response.json();
+            //check for errors
+            return json;
         });
+    }
+    fetchNoProxy(url, options, body) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const response = yield (0, node_fetch_1.default)(url, Object.assign(Object.assign({}, options), { body: body }));
+            const json = yield response.json();
+            //check for errors
+            return json;
+        });
+    }
+    static getCookie() {
+        return "_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_2E550C6CC25254A76E92393C02669F372F3E3F3EEACF7991677DC4E073887CB37053596F9752019C03DEE4D5DC0F4FDA9CB4188FFC0ECE6187E45AC41E20031AB7F7A7110117B760DACC01BBD62D67AE5472234DC993475AC4C04DBF715AC43067DAF80637A5BDFF1BDD6B90A9BC2E6894399C541F9D1685BD11D660AAAFE02580CA277B276C45DBF1F5898E9215E906E2C99CA7573AC7B7151CF37C35A135C60756D98470847D7AE97E49FE2A7CBD970B1E5ACC262126F12CC216DB3150A04187D95CB42048FCA9C18A78D646308A430AE895445086EB2EF52A2884980B8731CCD341FA4306A93C78C63C39D5A0288B5ECB42ABCF2C2EC97531802ED3B30DEB32765CA47752843DB9200EA68310834BBB7873A9848A290BE762E310BE30583CC6AF93280000EB7C930DF03714330A1B2B7E0E7C8D4E8554ED477A238E7A7736E38524C93FFD428B746FD890C27F23A650046ADB88C9F41444B9EE38EB8ACA59E6C09F5363E0E1120E2CB034662C11C0CB71990EAD4CC924812E39657C911ED94EBA305742377D607F4AAD4C6C9846CDDD5BC23E";
     }
     static userPresence(userId) {
         return __awaiter(this, void 0, void 0, function* () {
             const url = "https://presence.roblox.com/v1/presence/users";
             const options = {
                 method: "POST",
-                'Cookie': '.ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_875EE3DBC80BCAF86FEB1495E7127B1AAE20361EF8FA4AE5AB84C1243B8C58F14646D0B6B2FEFBF456AA402682FEE225F45DB73248F08B0CBE1FA5B968594250071B546585BB57978D43574A83805A1732C3906A6AE09E1EE2D1AD7E31F003D6161428346281CFA8F81DB32068EFA8EBFC2A2AE45045A37827C186861992F7456908C3EFD51ADCF7F9304DDE9CAD5A21836B980F3173E470C5A721E110852FE154EFC4F02CE052317579793C44BDEB648AB55BDD2D327DCE305F3CC96CCDFB8917F7139475F3AC7367A3F5E83ED8D21634807A7974C4B8841D2F4FCF1476C87671F7031E1874882CCAB27D8CBBB700A73D4BA8D92A153A61BF483A0565B03612100A5E3BF0C2D84C965414987C3D5CBDF0727698909A6CFB4923E85B8F744100396BAC23E0EC3F3764022BFDFEA8E7450BE517220105182E904BE1468359CDDC0238CFA6AC7CA7BE947DF9B8F6C681761CB867D29C64E7E6B2F34206738059F17CFCD19E0E4E98E8CFB413741C2D85D685043C9FF04C72A87119963D26E98247C91F6330',
+                'Cookie': this.getCookie(),
                 'accept': 'application/json',
                 'content-type': 'application/json'
             };
@@ -42,35 +55,27 @@ class RobloxAPI {
                 userIds: userId
             });
             const response = yield this.fetchData(url, options, body);
-            const json = JSON.parse(response.body);
-            return json;
+            return response;
         });
     }
     static getOnline(asset_id) {
         return __awaiter(this, void 0, void 0, function* () {
+            yield noblox_js_1.default.setCookie(RobloxAPI.getCookie());
             //get the item from database with Database.getAllUsersWithItem
             const users = yield DataBase_1.DataBase.getAllUsersWithItem(asset_id);
-            //split into chunks of 100
-            const chunks = this.chunkArray(users, 100);
-            //create an array of promises
-            const promises = [];
-            for (let i = 0; i < chunks.length; i++) {
-                promises.push(this.userPresence(chunks[i]));
-            }
-            //await all promises
-            const results = yield Promise.all(promises);
-            //filter back all that dont have a userPresenceType of 2
-            const filtered = [];
-            for (let i = 0; i < results.length; i++) {
-                const data = results[i].data;
-                for (let j = 0; j < data.length; j++) {
-                    if (data[j].userPresenceType == 2) {
-                        filtered.push(data[j].userPresenceType);
-                    }
-                }
-            }
-            //return the filtered array
-            return filtered;
+            //remove invalid users using db.removeInvalids
+            const validUsers = yield DataBase_1.DataBase.removeInvalids(users);
+            //remove the first 10 (superstitious)
+            validUsers.splice(0, 10);
+            //get the userids from the valid users
+            const userIds = [];
+            //pick a random 100 users from the valid users
+            let randomUsers = validUsers.sort(() => Math.random() - Math.random()).slice(0, 49);
+            //get the user presences from the userids
+            const results = (yield noblox_js_1.default.getPresences(validUsers)).userPresences;
+            fs_1.default.writeFileSync("results.json", JSON.stringify(results));
+            //return the presences
+            return results;
         });
     }
     static chunkArray(myArray, chunk_size) {
@@ -87,9 +92,41 @@ class RobloxAPI {
     }
     static getProxy() {
         const proxy = proxies[Math.floor(Math.random() * proxies.length)];
-        //split into ip and port
-        const split = proxy.split(":");
-        return { ip: split[0], port: Number(split[1]) };
+        return proxy;
+    }
+    static userFriendlyResults(filtered) {
+        const results = [];
+        //iterate through results and
+        //Remove any ones with "null" place id
+        //Remove any ones with "null" last location
+        //give a simple user friendly result user profile link, place name, and last location
+        for (let i = 0; i < filtered.length; i++) {
+            if (filtered[i].placeId == null || filtered[i].lastLocation == null)
+                continue;
+            results.push({
+                "userProfile": `https://www.roblox.com/users/${filtered[i].userId}/profile`,
+                "placeName": filtered[i].place.name,
+                "lastLocation": filtered[i].lastLocation
+            });
+        }
+        console.log(results);
+        return results;
+    }
+    static users(userIds) {
+        if (userIds.length > 100)
+            throw new Error("Maximum of 100 users per request");
+        //turn userids into int
+        const url = "https://users.roblox.com/v1/users";
+        const options = {
+            method: "POST",
+            'Cookie': '.ROBLOSECURITY=' + this.getCookie(),
+            'accept': 'application/json',
+            'content-type': 'application/json'
+        };
+        const body = JSON.stringify({
+            userIds: userIds
+        });
+        return this.fetchData(url, options, body);
     }
 }
 exports.RobloxAPI = RobloxAPI;

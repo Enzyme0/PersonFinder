@@ -35,26 +35,33 @@ export class RobloxAPI
     }
     public static getCookie()
     {
-        return "_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_A66A9D8EB763A4FE894D48E46E416BE0754DEE71858A90BA13E77A44A4C4B7F691471EC3ADBC657ABD3F91599714D81B3B8EF30BDDDEBC2B41C252FC094444CD117C35699BD4D307CF989A9ACA24C2D76E242944DA015C0DBE92722B158C6C73F74A4423BC3ED296324A851225FBF62381CE0924ADCE57D40C4A7CBF55F0858F2D52115D9F21F9BA58A7398D4894C259380097DE3360D0596B56AC76CD57392704DC18FFF88F40658DCE94FC8983842AE34FF642B590564700B885AC3E6EF950245048392D8757D8BBBEA9DD35FB0A25713BA27999228382824FC7758209409BF99A74F5084EAAAEBDEB25E27F36AE2BEEA3E9DF2FF1A190A1E797E767A36343A291CB19AAF4FFD837873174BF9AD64CFF0574900C38C3D225BB89783B1AE353083EDB2122E041B3F1E02C161C4FA641FF69EEB6022427125BD330CD10774C97BEFE05E44B307553EB21DCA4FDE987B85F5E3813";
+        return "_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_DB33B5EDEE06860BC0B2A268221D9443F3FF93A5FC31B442727EDEEBFF4AD5368F5EFFD741B1F1C8F556B0ED60C667F7EC73FD4D814689071C6EC7296130A34BDC1A6D83A6B7426BE60C451DF6DCC054A8361467539E9E366E39AA1605A6CF5F85CDDA38BD1F8E290E3FA59227E2EF3B74A3D771AC2B9E3B775A32634DF6588C959A31FA0FD3248DDF5CF684C70E09B63CD1EAD47AC3C98A8187B6A3CB69CC1740E71C856C312AB608296FBC50C797A717986E5152984C513AA143DC98A14B05ECEFFBCB47EC912C21A9AA3D7BFC27E6292022FDDD868E72E5CDBD9482FCCA148CE8A161E3D92EC69D67420A3143AC316B3E4146CFA8C0992FBFB7B63100C4CF590495396E16849CBEA5D86B98B49DDCDDE6673248A947E3F855284535B4888220C69F077D301978B9152568F1758F14E8E63631D1A2C284739BA1DEF8997AE0D6D3D088289B0EBECCAA31167D4AC7BE40C2C71E";
     }
-    private static async userPresence(userId: string[])
+    private static async userPresence(userId: string[]) : Promise<UserPresence[]>
     {
         const url = "https://presence.roblox.com/v1/presence/users";
-        const options = { 
+        const options = {
             method: "POST",
-            'Cookie': this.getCookie(),
-            'accept': 'application/json',
-            'content-type': 'application/json'
-        };
+            headers: {
+                "X-CSRF-TOKEN": await this.getxcrsf(),
+                "Cookie": ".ROBLOSECURITY=" + this.getCookie() + "",
+                "Content-Type": "application/json"
+            }
+        }
         const body = JSON.stringify({
             userIds: userId
         });
         const response = await this.fetchData(url, options, body);
         return response;
 
-        
     }
 
+    public static async getxcrsf()
+    {
+        //login
+        await noblox.setCookie(this.getCookie());
+        return noblox.getGeneralToken();
+    }
     public static async getOnline(asset_id: string): Promise<UserPresence[]>
     {
         await noblox.setCookie(RobloxAPI.getCookie());
@@ -66,22 +73,48 @@ export class RobloxAPI
         validUsers.splice(0, 10);
         //get the userids from the valid users
         const userIds = [];
-        let presences = await noblox.getPresences(validUsers);
-        //filter out all without a place id
-        presences.userPresences = presences.userPresences.filter((presence: any) => presence.placeId != null);
-        //get the place ids from the presences
-        //obj format that we want
-        /*
+        for(let i = 0; i < validUsers.length; i++)
         {
-            userId: 123,
-            placeId: 123,
-            lastLocation: "string"
-            gameId: 123
-            universeId: 123
+            userIds.push(validUsers[i]);
         }
-        */
-        return presences.userPresences;
+        //chunk userids into 100s
+        const chunks : any[] = this.chunkArray(userIds, 100);
+        //run chunked userids through userPresence
+        let results : any[] = [];
+        for(let i = 0; i < chunks.length; i++)
+        {
+            results.push(this.userPresence(chunks[i]));
+        }
 
+        //get the presences for each chunk
+        //promise.all the presences
+        results = await Promise.all(results);
+        let dupe : any[] = [];
+        for(let i = 0; i < results.length; i++)
+    {
+        console.log(results[i])
+        for(let j = 0; j < results[i].userPresences.length; j++)
+            {   
+                console.log(results[i].length)
+            results = results[i].userPresences[j]
+            dupe.push(results)
+            }
+    }
+        //turn the results into a single array using .concat
+        /*
+        var merged = test2d.reduce(function(prev, next) {
+            return prev.concat(next);
+          });
+          */
+        console.log(dupe)
+        fs.writeFileSync("results.json", JSON.stringify(dupe));
+        //remove all presences that dont have a "lastLocation" or dont have presencetype of 2
+        //check presenctype first for performance
+        const filtered = dupe.filter((presence) => presence.userPresenceType === 2);
+        //check last location
+        const finalFiltered = dupe.filter((presence) => presence.lastLocation !== null);
+        console.log(finalFiltered)
+        return finalFiltered;
     }
 
     public static chunkArray(myArray: any[], chunk_size: number){
@@ -130,7 +163,8 @@ export class RobloxAPI
             method: "POST",
             'Cookie': '.ROBLOSECURITY=' + this.getCookie(),
             'accept': 'application/json',
-            'content-type': 'application/json'
+            'content-type': 'application/json',
+            'X-CSRF-TOKEN': this.getxcrsf()
         };
         const body = JSON.stringify({
             userIds: userIds
@@ -138,3 +172,23 @@ export class RobloxAPI
         return this.fetchData(url, options, body);
     }
 }
+
+
+//if ran tests
+const url = "https://users.roblox.com/v1/users/authenticated";
+const options = {
+    method: "GET",
+    //xcsrf
+    headers: {
+        "Cookie": ".ROBLOSECURITY=" + RobloxAPI.getCookie(),
+        "Content-Type": "application/json",
+        "X-CSRF-TOKEN": RobloxAPI.getxcrsf()
+    }
+}
+//fetch with proxy
+RobloxAPI.fetchData(url, options, null).then((res) => {
+    console.log(res);
+}).catch((err) => {
+    console.log(err);
+}
+);

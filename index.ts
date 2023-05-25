@@ -1,6 +1,6 @@
 //discord js
 //const { Client, GatewayIntentBits, messageLink, ActionRow, ActionRowBuilder, ButtonBuilder, EmbedBuilder, Interaction} = require('discord.js');
-import { Client, GatewayIntentBits, messageLink, ActionRow, ActionRowBuilder, ButtonBuilder, EmbedBuilder, Interaction, CacheType, ChannelFlagsBitField, ChannelType, ChannelFlags, Attachment, AttachmentBuilder, AttachmentData} from 'discord.js';
+import { Client, GatewayIntentBits, messageLink, ActionRow, ActionRowBuilder, ButtonBuilder, EmbedBuilder, Interaction, CacheType, ChannelFlagsBitField, ChannelType, ChannelFlags, Attachment, AttachmentBuilder, AttachmentData, Embed, Channel} from 'discord.js';
 //.env 
 
 const client = new Client({
@@ -28,7 +28,11 @@ const api = new API();
 const itemChannel = '1103141647618940958'
 //create a new instance of the database
 
-
+type itemData = {
+    item_name: string,
+    item_id: number,
+    channel : Channel
+}
 
 
 
@@ -38,6 +42,7 @@ async function ping(interaction : Interaction<CacheType>) {
 }
 
 async function reply(interaction : Interaction<CacheType>, message : string) {
+    //check to see if its itemData
     if(!interaction.isCommand()) return;
     try
     {
@@ -111,8 +116,48 @@ async function addItemChannel(interaction : Interaction<CacheType>, item : Item)
 
 
 }
-async function updateChannel(interaction : Interaction<CacheType>, item : Item) {
-    return "coming soon";
+async function updateChannel(assetId : string) {
+    //refresh the channel with the new item data
+    Item.update(assetId);
+    const item = await Item.get(assetId);
+    //get the channel with the name itemname-itemid
+
+    //search for the channel in the category itemChannel of the guilds
+    const guildId = "1103083544718348308";
+    const guild = await client.guilds.fetch(guildId);
+    let name = item.data.item_name.replace(/ /g, "-").toLowerCase();
+    const channel = guild.channels.cache.find(channel => channel.name === `${name}-${item.data.item_id.toLowerCase()}` && channel.parentId === itemChannel);
+    //throw if not text channel
+    if(!channel?.isTextBased()) throw new Error("Channel is not a text channel!");
+    //get the actual channel
+    //say "updating channel..."
+    await channel?.send("Updating channel...");
+    //send the item data to the channel
+    //turn value into a string cuz for some reason it's a number
+    try
+    {
+        const owners = item.data.owners ?? "0";
+        const value = item.data.value ?? "N/A";
+        const demand = item.data.demand ?? "N/A";
+        const rap = item.data.rap ?? "N/A";
+        await channel?.send({embeds: [new EmbedBuilder()
+            .setTitle("New item added! " + item.data.item_name)
+            .setURL(`https://www.rolimons.com/item/${item.data.item_id}`)
+            .setThumbnail(item.data.thumbnail_url_lg)
+            .addFields(
+                {name: "Best Price", value: item.data.best_price.toLocaleString(), inline: true},
+                {name: "Owners", value: owners, inline: true},
+                {name: "Value", value: value, inline: true},
+                {name: "Demand", value: demand, inline: true},
+                {name: "Rap", value: rap, inline: true},
+            )
+            ]});
+    }
+    catch(err)
+    {
+        console.log(err);
+    }
+
 }
 
 
@@ -155,6 +200,12 @@ async function addItem(interaction : Interaction<CacheType>) {
 
 
 }
+async function userIdFromEmbed(embed: Embed)
+{
+    const userName = embed.fields[0].value;
+    return userName;
+
+}
 async function deleteItem(interaction: Interaction<CacheType>)
 {
     if(!interaction.isChatInputCommand()) return;
@@ -191,8 +242,37 @@ async function getOwners(interaction: Interaction<CacheType>)
     if(item?.isNull()) return reply(interaction, "Item does not exist in database!");
     //run RobloxAPI.getOnline(assetId)
     await reply(interaction, "Getting owners...");
-    const owners = await RobloxAPI.getOnline(assetId);
-    //get all owner's userids
+    let owners : any[] = await RobloxAPI.getOnline(assetId);
+    //remove all banned users
+    let banned = await DataBase.allBanned();
+    const ids = await Pretty.getIds(banned);
+    //make banned an array of userids
+     //remove all owners that include ids
+     //remove all undefined owners
+     for(let i = 0; i < owners.length; i++)
+     {
+         if(owners[i] == undefined)
+         {
+             owners.splice(i, 1);
+         }
+     }
+     let Strings = JSON.stringify(owners);
+     let temp = JSON.parse(Strings);
+    for(let i = owners.length - 1; i >= 0; i--)
+    {
+        //not using .includes cuz it says its not a function
+        for(let j = 0; j < ids.length; j++)
+        {
+            console.log(owners[i])
+            console.log(`debug: ${owners[i].userId.toString()} ${ids[j].toString()}`)
+            if(owners[i].userId.toString() == ids[j].toString())
+            {
+                console.log("removing banned user " + owners[i].userId.toString())
+               temp.splice(i, 1);
+            }
+        }
+    }
+    owners = temp;
     console.log(owners)
     if(owners.length == 0) return interaction.editReply("No owners found!");
     const userIds = [];
@@ -205,8 +285,21 @@ async function getOwners(interaction: Interaction<CacheType>)
     //send the owners in a message
     //owners is a string
     let embeds = responses.embeds;
-    await interaction.channel?.send({embeds: embeds});
-}
+    let rows = responses.rows;
+    const messages = [];
+    for(let i = 0; i < embeds.length; i++)
+    {
+        try
+        {
+            await interaction.channel?.send({components: [rows[i]], embeds: [embeds[i]]}).then(message => messages.push(message));
+        }
+        catch(err)
+        {
+            console.log(err);
+        }
+        
+    }
+}   
 async function getOwnerIds(interaction: Interaction<CacheType>)
 {
     if(!interaction.isChatInputCommand()) return;
@@ -255,6 +348,23 @@ client.on('interactionCreate', async interaction => {
         catch(err: any) {
             await reply(interaction, err.toString());
         }
+    }
+    if(interaction.commandName === 'update')
+    {
+        const assetId = interaction.options.getString('assetid'); if(!assetId) return reply(interaction, "Please provide an asset id");
+        await updateChannel(assetId);
+    }
+});
+//buttons
+client.on('interactionCreate', async interaction => {
+    if(!interaction.isButton()) return;
+    //ban
+    if(interaction.customId === 'ban') {
+        //get the user id from the embed
+        const userId = await userIdFromEmbed(interaction.message.embeds[0]);
+        //ban the user
+        await interaction.reply({content: `Banned ${userId}`, ephemeral: true});
+        await DataBase.ban(userId);
     }
 });
 

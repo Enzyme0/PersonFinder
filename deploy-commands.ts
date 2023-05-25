@@ -83,6 +83,19 @@ client.application.commands.create({
         }
     ]
 });
+//update
+client.application.commands.create({
+    name: 'update',
+    description: 'Updates an item',
+    options: [
+        {
+            name: 'assetid',
+            description: 'The asset id of the item',
+            type: 3,
+            required: true,
+        }
+    ]
+});
 
 });
 

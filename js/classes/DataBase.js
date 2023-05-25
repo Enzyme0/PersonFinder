@@ -17,11 +17,14 @@ const API_1 = require("./API");
 //mongodb
 require("mongodb");
 const api = new API_1.API();
+const RobloxAPI_1 = require("./RobloxAPI");
 class DataBase {
     static connect() {
         return __awaiter(this, void 0, void 0, function* () {
             const MongoClient = require('mongodb').MongoClient;
-            const uri = "mongodb://localhost:27017";
+            //local
+            const uri = "mongodb://localhost:27017/";
+            const ssl = true;
             const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
             return yield client.connect();
         });
@@ -33,10 +36,39 @@ class DataBase {
             return db.collection(collection);
         });
     }
+    static removeInvalids(owners) {
+        return __awaiter(this, void 0, void 0, function* () {
+            //iterate through the owners array and remove any invalid users using the https://users.roblox.com/v1/users with the id in the owners array
+            let ids = [];
+            for (let i = 0; i < owners.length; i++) {
+                ids.push(owners[i].owner_id);
+            }
+            const chunks = RobloxAPI_1.RobloxAPI.chunkArray(ids, 100);
+            const promises = [];
+            for (let i = 0; i < chunks.length; i++) {
+                promises.push(RobloxAPI_1.RobloxAPI.users(chunks[i]));
+            }
+            const results = yield Promise.all(promises);
+            //if the user is invalid, the roblox api simply doesnt return it in the array
+            //if i have users 1, gabagoo, 12, 3
+            //and i send it to the api, it will return 1, 12, 3
+            //check to find this missing user, and remove from the owners array
+            //return the owners array
+            //if owners[i].owner_id is not in results, remove it from the owners array
+            for (let i = 0; i < owners.length; i++) {
+                if (!results.includes(owners[i].owner_id)) {
+                    owners.splice(i, 1);
+                }
+            }
+            return owners;
+        });
+    }
     static addItem(item, owners) {
         return __awaiter(this, void 0, void 0, function* () {
             const collection = yield this.getCollection("items");
             //make an object with the item data and the owners
+            //remove invalid users from the owners array
+            owners = yield this.removeInvalids(owners);
             let obj = {
                 data: item.data,
                 owners: owners
@@ -56,7 +88,6 @@ class DataBase {
             //get the item from the database, (just the whole document)
             //every item has an object called data, which is the item data. we're looking for data.item_id
             const document = yield collection.findOne({ "data.item_id": assetId });
-            console.log(document);
             //if the document is null, return null
             if (!document) {
                 return null;
@@ -93,6 +124,23 @@ class DataBase {
                 throw new Error("Config not modified, watf happen!");
         });
     }
+    static updateItem(item) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const collection = yield this.getCollection("items");
+            //document is the item
+            let document = yield collection.findOne({ "data.item_id": item.data.item_id });
+            //if the document is null, return null
+            if (!document)
+                throw new Error("Item not found");
+            //update the item
+            document = item;
+            //update the document, NOW MONKEY.
+            const result = yield collection.updateOne({ "data.item_id": item.data.item_id }, { $set: document });
+            //if the result is not modified, throw an error
+            if (result.modifiedCount == 0)
+                throw new Error("Item not modified, watf happen!");
+        });
+    }
     static getConfig() {
         return __awaiter(this, void 0, void 0, function* () {
             const collection = yield this.getCollection("config");
@@ -127,6 +175,17 @@ class DataBase {
         });
     }
     static allNonBan() {
+        return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+            const collection = yield this.getCollection("banned");
+            const documents = yield collection.find({}).toArray();
+            const users = [];
+            for (const document of documents) {
+                users.push(document.userId);
+            }
+            resolve(users);
+        }));
+    }
+    static allBanned() {
         return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
             const collection = yield this.getCollection("banned");
             const documents = yield collection.find({}).toArray();

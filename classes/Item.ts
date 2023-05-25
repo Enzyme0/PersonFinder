@@ -15,6 +15,15 @@ export class Item {
         }
         return new Item(data);
     }
+    static async update(assetId: string): Promise<void> {
+        const data = await api.getAssetData(assetId);
+        //turn all data into strings
+        for(let key in data) {
+            if(data[key] === null) continue;
+            data[key] = data[key].toString();
+        }
+        await db.updateItem(data);
+    }
 
     constructor(data: any) {
         this.data = data;
